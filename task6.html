@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Word Frequency Highlighter</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+            textarea {
+                width: 90%;
+                height: 200px;
+                padding: 10px;
+                font-size: 16px;
+            }
+            .frequent {
+                background-color: yellow;
+            }
+        </style>
+        <script>
+            function highlightFrequentWords() {
+                //copy input text locally
+                const textInput = document.getElementById('textInput').value;
+                //copy frequency value locally
+                const desiredMaxFrequency = parseInt(document.getElementById('maxFrequency').value);
+                console.log(desiredMaxFrequency);
+                //prepare the field for the output
+                const output = document.getElementById('output');
+                output.innerHTML = '';
+
+                //instantiate a trie from the class Trie specified below
+                const trie = new Trie();
+                /*process the input, so that it is all lowercase, without punctuation marks and so that all words are separated and put into an array*/
+                const words = textInput.toLowerCase().replace(/[^a-z ]/g, '').split(' ');
+                //keep track of the total number of contained words originally (used to calculate the percentage)
+                const totalWords = words.length;
+
+                //iterate through the words to add them singularly to the trie
+                for(let word of words)
+                    trie.insert(word);
+
+                //frequencies part
+                const frequencies = trie.getFrequencies();
+                const threshold = (desiredMaxFrequency / 100) * totalWords;
+
+                //output
+                const processedText = textInput.split(' ').map(word => {
+                    const lowercaseWord = word.toLowerCase();
+                    //if the frequencies of the current word is higher than the threshold...
+                    if(frequencies[lowercaseWord] >= threshold) {
+                        //...then add an HTML "span" object which highlights the word as too frequent
+                        return `<span class="frequent">${word}</span>`;
+                    }
+                    //otherwise return the word unformatted
+                    return word;
+                }).join(' '); //join the result
+
+                output.innerHTML = processedText;
+            }
+        </script>
+
+        <script>
+            //define the structure of a single node of the trie
+            class TrieNode {
+                constructor() {
+                    this.children = {}; //array for child nodes
+                    this.isEndOfWord = false; //specify whether it is a leaf node or not
+                    /*specify how many times, while populating the trie, the leaf node has been reached
+                      this corresponds to how many times the word is contained in the input*/
+                    this.frequency = 0;
+                }
+            }
+
+            //define the structure of a trie
+            class Trie {
+                //constructor where the root is a blank node
+                constructor() {
+                    this.root = new TrieNode();
+                }
+
+                //word insertion method, used to add words to the trie
+                insert(word) {
+                    //start traversing the trie from the root (top level)
+                    let node = this.root;
+                    //for every character passed to the method as an argument, make a move
+                    for(let char of word) {
+                        if(!node.children[char]) //if a node for the current character does not exist (yet)...
+                            node.children[char] = new TrieNode(); //...create one
+                        /*else go to the lower level in the trie hierchy; the node for the current character
+                          exists already*/
+                        node = node.children[char];
+                    }
+                    //once the end of the string (word) has been reached, mark the leaf node as such
+                    node.isEndOfWord = true;
+                    //and increase its frequency
+                    node.frequency++;
+                }
+
+                //frequencies calculation method
+                getFrequencies() {
+                    const frequencies = {}; //array of frequencies
+                    
+                    //nested function which builds the word from node to node
+                    const traverse = (node, word) => {
+                        if(node.isEndOfWord) //if the lead node of a word has been reached...
+                            frequencies[word] = node.frequency; //...save the word and its frequency in the frequencies array
+                        
+                        /*this recursive step ensures that all the possible paths of the trie
+                          are traversed (at the end of each path, a new word is added to the array)*/
+                        for(let char in node.children)
+                            traverse(node.children[char], word + char);
+                    };
+                    
+                    //the traverse function is called now that it is defined
+                    traverse(this.root, '');
+                    
+                    //the result of the function is returned
+                    return frequencies;
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <center>
+            <h1>Word frequency highlighter</h1>
+            <textarea id="textInput" placeholder="Enter your text here..."></textarea>
+            <input type="number" id="maxFrequency" style="margin-top: 20pt;" max="100" placeholder="Enter highest frequency..."/><br>
+            <button type="button" style="margin-top: 10pt; font-size: 15pt; padding: 15pt;" onclick="highlightFrequentWords()">Highlight Frequent Words</button>
+        </center>
+        <div id="output"></div>
+    </body>
+</html>
