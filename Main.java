@@ -1,4 +1,4 @@
-//for task 3
+//For task 3
 
 import java.math.BigInteger;
 import java.util.Scanner;
